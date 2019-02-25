@@ -6,7 +6,8 @@ var UsersSchema = new mongoose.Schema(
     UserName: String,
     Email: String,
     Password: String,
-    RoleId: Number
+    RoleId: Number,
+    PersonalUniqueueID: { type: String, default: null }
   },
   { timestamps: true }
 );

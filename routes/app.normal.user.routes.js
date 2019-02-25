@@ -13,7 +13,7 @@ router.get("/api/searchaccessuser", function(req, res) {
   NormalUserController.SearchAccessUser(req, res);
 });
 
-router.get("/api/approvenormaluser", function(req, res) {
+router.post("/api/approvenormaluser", function(req, res) {
   NormalUserController.Approve(req, res);
 });
 
@@ -33,4 +33,7 @@ router.post("/api/activatenormaluser", function(req, res) {
   NormalUserController.Activate(req, res);
 });
 
+router.get("/api/getnormaluserdetails", function(req, res) {
+  NormalUserController.GetAccessUserProfile(req, res);
+});
 module.exports = router;

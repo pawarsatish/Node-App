@@ -16,35 +16,49 @@ var AccessUserController = {};
 //Authenticate Access User
 AccessUserController.AuthAccessUser = function(request, response) {};
 
-//Get Normal User
+//Approve Normal User Updated Info
 AccessUserController.Approve = function(request, response) {
   //JSON.stringify(obj1) === JSON.stringify(obj2)
   var accessUser = request.body.accessUser;
+  //console.log(accessUser);
+  var id = accessUser._id;
   var tokenRecived = request.headers.authorization.split(" ")[1];
-  //var Role = request.headers.role;
+  var Role = request.headers.role;
   jwt.verify(tokenRecived, app.get("jwtSecret"), function(err, decoded) {
     if (err) {
       response.send({ success: false, message: "Token verification failed" });
     } else {
       request.decoded = decoded;
-      AccessUser.create(accessUser, function(err, res) {
-        if (!err) {
-          if (res != null) {
-            response.send({
-              data: res,
-              statusMessage: "User Created Successful",
-              statusCode: 200
-            });
-          } else {
-            response.send({ error: "User Creation Failed." });
+      if (Role === "1") {
+        TempAccessUser.deleteOne({ _id: id }, function(err, res) {
+          if (!err) {
+            if (res != null) {
+              if (res.deletedCount > 0) {
+                delete accessUser._id;
+                AccessUser.create(accessUser, function(err, res) {
+                  if (!err) {
+                    if (res != null) {
+                      response.send({
+                        data: res,
+                        statusMessage: "User Created Successful",
+                        statusCode: 200
+                      });
+                    } else {
+                      response.send({ error: "User Creation Failed." });
+                    }
+                  } else {
+                    response.send({ error: err });
+                  }
+                });
+              }
+            }
           }
-        } else {
-          response.send({ error: err });
-        }
-      });
+        });
+      }
     }
   });
 };
+//Search Normal User
 AccessUserController.SearchAccessUser = function(request, response) {
   var tokenRecived = request.headers.authorization.split(" ")[1];
   var Criteria = request.headers.criteria;
@@ -99,6 +113,7 @@ AccessUserController.SearchAccessUser = function(request, response) {
     }
   });
 };
+//Get List Of Normal Users
 AccessUserController.GetAllUsers = function(request, response) {
   var tokenRecived = request.headers.authorization.split(" ")[1];
   jwt.verify(tokenRecived, app.get("jwtSecret"), function(err, decoded) {
@@ -201,20 +216,40 @@ AccessUserController.Create = function(request, response) {
   var accessUser = request.body.accessUser;
   var tokenRecived = request.headers.authorization.split(" ")[1];
   var Role = request.headers.role;
+  //console.log(accessUser);
+
   jwt.verify(tokenRecived, app.get("jwtSecret"), function(err, decoded) {
     if (err) {
       response.send({ success: false, message: "Token verification failed" });
     } else {
       request.decoded = decoded;
       if (Role === "1") {
+        var AccessUserID = accessUser.UserId;
+        delete accessUser.UserId;
         AccessUser.create(accessUser, function(err, res) {
           if (!err) {
             if (res != null) {
-              response.send({
-                data: res,
-                statusMessage: "User Created Successful",
-                statusCode: 200
-              });
+              User.create(
+                {
+                  UserID: AccessUserID,
+                  Email: null,
+                  UserName: accessUser.FullName.split("~")[0],
+                  Password: accessUser.FullName.split("~")[2],
+                  RoleId: "3",
+                  PersonalUniqueueID: accessUser.PersonalUniqueueID
+                },
+                function(err, resp) {
+                  if (!err) {
+                    if (resp != null) {
+                      response.send({
+                        data: res,
+                        statusMessage: "User Created Successful",
+                        statusCode: 200
+                      });
+                    }
+                  }
+                }
+              );
             } else {
               response.send({ error: "User Creation Failed." });
             }
@@ -228,7 +263,7 @@ AccessUserController.Create = function(request, response) {
             if (res != null) {
               response.send({
                 data: res,
-                statusMessage: "User Created Successful",
+                statusMessage: "User Created Successful Needs Admin Activation",
                 statusCode: 200
               });
             } else {
@@ -337,23 +372,32 @@ AccessUserController.Update = function(request, response) {
             function(err, res) {
               if (!err) {
                 if (res != null) {
-                  TempAccessUser.create(AccessUserRecieved, function(err, res) {
-                    if (!err) {
-                      if (res != null) {
-                        response.send({
-                          data: res,
-                          statusMessage: "User Sent For Approval",
-                          statusCode: 200
-                        });
+                  if (res.deletedCount > 0) {
+                    TempAccessUser.create(AccessUserRecieved, function(
+                      err,
+                      res
+                    ) {
+                      if (!err) {
+                        if (res != null) {
+                          response.send({
+                            data: res,
+                            statusMessage: "User Sent For Approval",
+                            statusCode: 200
+                          });
+                        } else {
+                          response.send({
+                            error: "User Sent For Approval Failed."
+                          });
+                        }
                       } else {
-                        response.send({
-                          error: "User Sent For Approval Failed."
-                        });
+                        response.send({ error: err });
                       }
-                    } else {
-                      response.send({ error: err });
-                    }
-                  });
+                    });
+                  } else {
+                    response.send({
+                      error: "User Already Sent For Approval"
+                    });
+                  }
                 } else {
                   response.send({ error: "User Sent For Approval Failed." });
                 }
@@ -441,7 +485,7 @@ AccessUserController.Update = function(request, response) {
     }
   });
 };
-
+//Activate Normal User
 AccessUserController.Activate = function(request, response) {
   var AccessUserRecieved = request.body.accessUser;
   var tokenRecived = request.headers.authorization.split(" ")[1];
@@ -458,16 +502,51 @@ AccessUserController.Activate = function(request, response) {
         ) {
           if (!err) {
             if (res != null) {
+              //Added Just now
+              var AccessUserID = AccessUserRecieved.UserId;
+              delete AccessUserRecieved.UserId;
               delete AccessUserRecieved._id;
-
               AccessUser.create(AccessUserRecieved, function(err, res) {
                 if (!err) {
                   if (res != null) {
-                    response.send({
-                      data: res,
-                      statusMessage: "User Activated Successful",
-                      statusCode: 200
-                    });
+                    User.findOne(
+                      { UserName: AccessUserRecieved.FullName.split("~")[0] },
+                      function(err, res) {
+                        if (!err) {
+                          if (res != null) {
+                            //console.log(res);
+                          } else {
+                            User.create(
+                              {
+                                UserID: AccessUserID,
+                                Email: null,
+                                UserName: AccessUserRecieved.FullName.split(
+                                  "~"
+                                )[0],
+                                Password: AccessUserRecieved.FullName.split(
+                                  "~"
+                                )[2],
+                                RoleId: "3",
+                                PersonalUniqueueID:
+                                  AccessUserRecieved.PersonalUniqueueID
+                              },
+                              function(err, resp) {
+                                if (!err) {
+                                  if (resp != null) {
+                                    response.send({
+                                      data: res,
+                                      statusMessage:
+                                        "User Activated Successful",
+                                      statusCode: 200
+                                    });
+                                  }
+                                }
+                              }
+                            );
+                          }
+                        }
+                      }
+                    );
                   } else {
                     response.send({ error: "User Activation Failed." });
                   }
@@ -487,12 +566,119 @@ AccessUserController.Activate = function(request, response) {
   });
 };
 
-//Delete Normal User
-AccessUserController.Delete = function(request, response) {
-  // var user = {
-  //     UserName: request.body.UserName,
-  //     PassWord: request.body.PassWord
-  // }
-  // AccessUser.create(user);
+//Geet Normal User Profile
+AccessUserController.GetAccessUserProfile = function(request, response) {
+  //console.log(request.headers);
+  var userName = request.headers.username;
+  var tokenRecived = request.headers.authorization.split(" ")[1];
+  var Role = request.headers.role;
+  jwt.verify(tokenRecived, app.get("jwtSecret"), function(err, decoded) {
+    if (err) {
+      response.send({ success: false, message: "Token verification failed" });
+    } else {
+      //console.log("Token verified");
+      request.decoded = decoded;
+      if (Role === "3") {
+        var queryUserRole = User.findOne({
+          UserName: userName,
+          RoleId: Role
+        }).select("-_id -__v -updatedAt -createdAt");
+        queryUserRole.exec(function(err, resp) {
+          if (!err) {
+            if (resp != null) {
+              var Obj = new Object();
+              Obj.UserID = resp.UserID;
+              Obj.UserName = resp.UserName;
+              Obj.Email = resp.Email;
+              Obj.Password = resp.Password;
+              Obj.RoleId = Role;
+
+              var uniqueId = resp.PersonalUniqueueID;
+              console.log(uniqueId);
+              var queryTempAccessUser = TempAccessUser.findOne({
+                PersonalUniqueueID: uniqueId
+              }).select("-_id -__v -updatedAt -createdAt");
+              queryTempAccessUser.exec(function(err, resp) {
+                if (!err) {
+                  if (resp != null) {
+                    //console.log("In Temp Access Find");
+                    response.send({
+                      error:
+                        "your Profile Needs Approval From Admin As One Of Operator Has Updated Your Profile."
+                    });
+                  } else {
+                    var queryAccessUser = AccessUser.findOne({
+                      PersonalUniqueueID: uniqueId
+                    }).select("-_id -__v -updatedAt -createdAt");
+                    queryAccessUser.exec(function(err, resp) {
+                      if (!err) {
+                        if (resp != null) {
+                          //console.log("In Access Find");
+                          var ObjAccessUser = new Object();
+                          ObjAccessUser.PersonalUniqueueID =
+                            resp.PersonalUniqueueID;
+                          ObjAccessUser.FullName = resp.FullName;
+                          ObjAccessUser.FirstName = resp.FullName.split("~")[0];
+                          ObjAccessUser.MiddleName = resp.FullName.split(
+                            "~"
+                          )[1];
+                          ObjAccessUser.LastName = resp.FullName.split("~")[2];
+                          ObjAccessUser.GenderIs = resp.Gender;
+                          ObjAccessUser.DateOfBirth = resp.DateOfBirth;
+                          ObjAccessUser.Age = resp.Age;
+                          ObjAccessUser.Address = resp.Address;
+                          ObjAccessUser.FlatOrBungalowNumber = resp.Address.split(
+                            "~"
+                          )[0];
+                          ObjAccessUser.SocietyName = resp.Address.split(
+                            "~"
+                          )[1];
+                          ObjAccessUser.StreetName = resp.Address.split("~")[2];
+                          ObjAccessUser.City = resp.City;
+                          ObjAccessUser.State = resp.State;
+                          ObjAccessUser.PinCode = resp.PinCode;
+                          ObjAccessUser.PhoneNo = resp.PhoneNo;
+                          ObjAccessUser.MobileNo = resp.MobileNo;
+                          ObjAccessUser.IsPhysicalDisability =
+                            resp.PhysicalDisability;
+                          ObjAccessUser.Married = resp.MaritalStatus;
+                          ObjAccessUser.Education = resp.EducationStatus;
+                          ObjAccessUser.BirthSign = resp.BirthSign;
+                          var FinalObj = { ...Obj, ...ObjAccessUser };
+
+                          response.send({
+                            data: FinalObj,
+                            statusMessage: "Got User Profile",
+                            statusCode: 200
+                          });
+                        } else {
+                          response.send({
+                            error: "Getting User Profile Failed.."
+                          });
+                        }
+                      } else {
+                        response.send({
+                          error: "Getting User Profile Failed.."
+                        });
+                      }
+                    });
+                  }
+                } else {
+                  response.send({ error: "Getting User Profile Failed.." });
+                }
+              });
+            } else {
+              response.send({ error: "Getting User Profile Failed.." });
+            }
+          } else {
+            response.send({ error: "Getting User Profile Failed.." });
+          }
+        });
+      }
+    }
+  });
 };
 module.exports = AccessUserController;
+// PersonalUniqueueID
+// :
+// "11731"

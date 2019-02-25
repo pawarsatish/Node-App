@@ -202,7 +202,7 @@ UserController.Update = function(request, response) {
     }
   });
 };
-
+//Search Operator
 UserController.SearchOperator = function(request, response) {
   var tokenRecived = request.headers.authorization.split(" ")[1];
   var Criteria = request.headers.criteria;
@@ -215,7 +215,6 @@ UserController.SearchOperator = function(request, response) {
       var query = User.find({ UserName: Criteria }).select(
         "-_id -__v -updatedAt"
       );
-      //console.log(query);
       query.exec(function(err, res) {
         if (!err) {
           if (res != null) {
@@ -247,11 +246,6 @@ UserController.SearchOperator = function(request, response) {
 
 //Delete User
 UserController.Delete = function(request, response) {
-  // var user = {
-  //     UserName: request.body.UserName,
-  //     PassWord: request.body.PassWord
-  // }
-  // User.create(user);
   console.log("this is Delete");
 };
 
