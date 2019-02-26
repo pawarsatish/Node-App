@@ -62,54 +62,363 @@ AccessUserController.Approve = function(request, response) {
 AccessUserController.SearchAccessUser = function(request, response) {
   var tokenRecived = request.headers.authorization.split(" ")[1];
   var Criteria = request.headers.criteria;
+  var SearchKey = request.headers.searchkey;
+  var SearchValue = request.headers.searchvalue;
+
   jwt.verify(tokenRecived, app.get("jwtSecret"), function(err, decoded) {
     if (err) {
       response.send({ success: false, message: "Token verification failed" });
     } else {
       request.decoded = decoded;
       var returnedAccessUserObjects = [];
-      //find( { $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] } )
-      //var criteria = "/.*" + Criteria + ".*/";
-      var queryAccessUser = AccessUser.find({
-        MobileNo: Criteria
-      }).select("-_id -__v -updatedAt");
-      queryAccessUser.exec(function(err, res) {
-        if (!err) {
-          if (res != null) {
-            res.forEach(element => {
-              var Obj = new Object();
-              Obj.PersonalUniqueueID = element.PersonalUniqueueID;
-              Obj.FullName = element.FullName;
-              Obj.FirstName = element.FullName.split("~")[0];
-              Obj.MiddleName = element.FullName.split("~")[1];
-              Obj.LastName = element.FullName.split("~")[2];
-              Obj.GenderIs = element.Gender;
-              Obj.DateOfBirth = element.DateOfBirth;
-              Obj.Age = element.Age;
-              Obj.Address = element.Address;
-              Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
-              Obj.SocietyName = element.Address.split("~")[1];
-              Obj.StreetName = element.Address.split("~")[2];
-              Obj.City = element.City;
-              Obj.State = element.State;
-              Obj.PinCode = element.PinCode;
-              Obj.PhoneNo = element.PhoneNo;
-              Obj.MobileNo = element.MobileNo;
-              Obj.IsPhysicalDisability = element.PhysicalDisability;
-              Obj.Married = element.MaritalStatus;
-              Obj.Education = element.EducationStatus;
-              Obj.BirthSign = element.BirthSign;
-              var date = new Date(element.createdAt);
-              date = date.toUTCString();
-              Obj.createdAt = date;
-              returnedAccessUserObjects.push(Obj);
-            });
-            response.send({
-              data: returnedAccessUserObjects
-            });
+
+      if (Criteria == "InActive") {
+        var queryTempAccessUser = null;
+        if (SearchKey === "UserName") {
+          queryTempAccessUser = TempAccessUser.find({
+            $and: [{ PersonalUniqueueID: "-1" }]
+          }).select("-_id -__v -updatedAt");
+          queryTempAccessUser.exec(function(err, res) {
+            if (!err) {
+              if (res != null) {
+                res.forEach(element => {
+                  var tempObj = new Object();
+                  tempObj.FullName = element.FullName;
+                  tempObj.FirstName = element.FullName.split("~")[0];
+                  tempObj.MiddleName = element.FullName.split("~")[1];
+                  tempObj.LastName = element.FullName.split("~")[2];
+                  if (
+                    SearchValue === tempObj.FirstName ||
+                    SearchValue === tempObj.MiddleName ||
+                    SearchValue === tempObj.LastName
+                  ) {
+                    var Obj = new Object();
+                    Obj.FullName = element.FullName;
+                    Obj.FirstName = element.FullName.split("~")[0];
+                    Obj.MiddleName = element.FullName.split("~")[1];
+                    Obj.LastName = element.FullName.split("~")[2];
+                    Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                    Obj.GenderIs = element.Gender;
+                    Obj.DateOfBirth = element.DateOfBirth;
+                    Obj.Age = element.Age;
+                    Obj.Address = element.Address;
+                    Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                    Obj.SocietyName = element.Address.split("~")[1];
+                    Obj.StreetName = element.Address.split("~")[2];
+                    Obj.City = element.City;
+                    Obj.State = element.State;
+                    Obj.PinCode = element.PinCode;
+                    Obj.PhoneNo = element.PhoneNo;
+                    Obj.MobileNo = element.MobileNo;
+                    Obj.IsPhysicalDisability = element.PhysicalDisability;
+                    Obj.Married = element.MaritalStatus;
+                    Obj.Education = element.EducationStatus;
+                    Obj.BirthSign = element.BirthSign;
+                    var date = new Date(element.createdAt);
+                    date = date.toUTCString();
+                    Obj.createdAt = date;
+                    returnedAccessUserObjects.push(Obj);
+                  }
+                });
+
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
+        } else if (SearchKey !== "UserName") {
+          if (SearchKey === "Mobile") {
+            queryTempAccessUser = TempAccessUser.find({
+              $and: [{ Mobile: SearchValue }, { PersonalUniqueueID: "-1" }]
+            }).select("-_id -__v -updatedAt");
+          } else if (SearchKey === "Gender") {
+            queryTempAccessUser = TempAccessUser.find({
+              $and: [{ Gender: SearchValue }, { PersonalUniqueueID: "-1" }]
+            }).select("-_id -__v -updatedAt");
           }
+          queryTempAccessUser.exec(function(err, res) {
+            if (!err) {
+              console.log(res);
+              if (res != null) {
+                res.forEach(element => {
+                  var Obj = new Object();
+                  Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                  Obj.FullName = element.FullName;
+                  Obj.FirstName = element.FullName.split("~")[0];
+                  Obj.MiddleName = element.FullName.split("~")[1];
+                  Obj.LastName = element.FullName.split("~")[2];
+                  Obj.GenderIs = element.Gender;
+                  Obj.DateOfBirth = element.DateOfBirth;
+                  Obj.Age = element.Age;
+                  Obj.Address = element.Address;
+                  Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                  Obj.SocietyName = element.Address.split("~")[1];
+                  Obj.StreetName = element.Address.split("~")[2];
+                  Obj.City = element.City;
+                  Obj.State = element.State;
+                  Obj.PinCode = element.PinCode;
+                  Obj.PhoneNo = element.PhoneNo;
+                  Obj.MobileNo = element.MobileNo;
+                  Obj.IsPhysicalDisability = element.PhysicalDisability;
+                  Obj.Married = element.MaritalStatus;
+                  Obj.Education = element.EducationStatus;
+                  Obj.BirthSign = element.BirthSign;
+                  var date = new Date(element.createdAt);
+                  date = date.toUTCString();
+                  Obj.createdAt = date;
+                  returnedAccessUserObjects.push(Obj);
+                });
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
         }
-      });
+      } else if (Criteria === "Active") {
+        var queryAccessUser = null;
+        if (SearchKey === "UserName") {
+          queryAccessUser = AccessUser.find({
+            UserName: SearchValue
+          }).select("-_id -__v -updatedAt");
+          queryTempAccessUser.exec(function(err, res) {
+            if (!err) {
+              if (res != null) {
+                res.forEach(element => {
+                  var tempObj = new Object();
+                  tempObj.FullName = element.FullName;
+                  tempObj.FirstName = element.FullName.split("~")[0];
+                  tempObj.MiddleName = element.FullName.split("~")[1];
+                  tempObj.LastName = element.FullName.split("~")[2];
+                  if (
+                    SearchValue === tempObj.FirstName ||
+                    SearchValue === tempObj.MiddleName ||
+                    SearchValue === tempObj.LastName
+                  ) {
+                    var Obj = new Object();
+                    Obj.FullName = element.FullName;
+                    Obj.FirstName = element.FullName.split("~")[0];
+                    Obj.MiddleName = element.FullName.split("~")[1];
+                    Obj.LastName = element.FullName.split("~")[2];
+                    Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                    Obj.GenderIs = element.Gender;
+                    Obj.DateOfBirth = element.DateOfBirth;
+                    Obj.Age = element.Age;
+                    Obj.Address = element.Address;
+                    Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                    Obj.SocietyName = element.Address.split("~")[1];
+                    Obj.StreetName = element.Address.split("~")[2];
+                    Obj.City = element.City;
+                    Obj.State = element.State;
+                    Obj.PinCode = element.PinCode;
+                    Obj.PhoneNo = element.PhoneNo;
+                    Obj.MobileNo = element.MobileNo;
+                    Obj.IsPhysicalDisability = element.PhysicalDisability;
+                    Obj.Married = element.MaritalStatus;
+                    Obj.Education = element.EducationStatus;
+                    Obj.BirthSign = element.BirthSign;
+                    var date = new Date(element.createdAt);
+                    date = date.toUTCString();
+                    Obj.createdAt = date;
+                    returnedAccessUserObjects.push(Obj);
+                  }
+                });
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
+        } else if (SearchKey !== "UserName") {
+          if (SearchKey === "Mobile") {
+            queryAccessUser = AccessUser.find({
+              Mobile: SearchValue
+            }).select("-_id -__v -updatedAt");
+          } else if (SearchKey === "Gender") {
+            queryAccessUser = AccessUser.find({
+              Gender: SearchValue
+            }).select("-_id -__v -updatedAt");
+          }
+          queryAccessUser.exec(function(err, res) {
+            if (!err) {
+              if (res != null) {
+                console.log("In Active Search Success");
+                res.forEach(element => {
+                  var Obj = new Object();
+                  Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                  Obj.FullName = element.FullName;
+                  Obj.FirstName = element.FullName.split("~")[0];
+                  Obj.MiddleName = element.FullName.split("~")[1];
+                  Obj.LastName = element.FullName.split("~")[2];
+                  Obj.GenderIs = element.Gender;
+                  Obj.DateOfBirth = element.DateOfBirth;
+                  Obj.Age = element.Age;
+                  Obj.Address = element.Address;
+                  Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                  Obj.SocietyName = element.Address.split("~")[1];
+                  Obj.StreetName = element.Address.split("~")[2];
+                  Obj.City = element.City;
+                  Obj.State = element.State;
+                  Obj.PinCode = element.PinCode;
+                  Obj.PhoneNo = element.PhoneNo;
+                  Obj.MobileNo = element.MobileNo;
+                  Obj.IsPhysicalDisability = element.PhysicalDisability;
+                  Obj.Married = element.MaritalStatus;
+                  Obj.Education = element.EducationStatus;
+                  Obj.BirthSign = element.BirthSign;
+                  var date = new Date(element.createdAt);
+                  date = date.toUTCString();
+                  Obj.createdAt = date;
+                  returnedAccessUserObjects.push(Obj);
+                });
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
+        }
+      } else if (Criteria === "Pending") {
+        var queryTempAccessUser = null;
+        if (SearchKey === "UserName") {
+          queryTempAccessUser = TempAccessUser.find({
+            $and: [
+              { ApproveStatus: "Pending" },
+              { PersonalUniqueueID: { $gt: -1 } }
+            ]
+          }).select("-_id -__v -updatedAt");
+          queryTempAccessUser.exec(function(err, res) {
+            if (!err) {
+              if (res != null) {
+                res.forEach(element => {
+                  var tempObj = new Object();
+                  tempObj.FullName = element.FullName;
+                  tempObj.FirstName = element.FullName.split("~")[0];
+                  tempObj.MiddleName = element.FullName.split("~")[1];
+                  tempObj.LastName = element.FullName.split("~")[2];
+                  if (
+                    SearchValue === tempObj.FirstName ||
+                    SearchValue === tempObj.MiddleName ||
+                    SearchValue === tempObj.LastName
+                  ) {
+                    var Obj = new Object();
+                    Obj.FullName = element.FullName;
+                    Obj.FirstName = element.FullName.split("~")[0];
+                    Obj.MiddleName = element.FullName.split("~")[1];
+                    Obj.LastName = element.FullName.split("~")[2];
+                    Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                    Obj.GenderIs = element.Gender;
+                    Obj.DateOfBirth = element.DateOfBirth;
+                    Obj.Age = element.Age;
+                    Obj.Address = element.Address;
+                    Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                    Obj.SocietyName = element.Address.split("~")[1];
+                    Obj.StreetName = element.Address.split("~")[2];
+                    Obj.City = element.City;
+                    Obj.State = element.State;
+                    Obj.PinCode = element.PinCode;
+                    Obj.PhoneNo = element.PhoneNo;
+                    Obj.MobileNo = element.MobileNo;
+                    Obj.IsPhysicalDisability = element.PhysicalDisability;
+                    Obj.Married = element.MaritalStatus;
+                    Obj.Education = element.EducationStatus;
+                    Obj.BirthSign = element.BirthSign;
+                    Obj.ApproveStatus = element.ApproveStatus;
+                    var date = new Date(element.createdAt);
+                    date = date.toUTCString();
+                    Obj.createdAt = date;
+                    returnedAccessUserObjects.push(Obj);
+                  }
+                });
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
+        } else if (SearchKey !== "UserName") {
+          if (SearchKey === "Mobile") {
+            queryTempAccessUser = TempAccessUser.find({
+              $and: [
+                { Mobile: SearchValue },
+                { ApproveStatus: "Pending" },
+                { PersonalUniqueueID: { $gt: -1 } }
+              ]
+            }).select("-_id -__v -updatedAt");
+          } else if (SearchKey === "Gender") {
+            queryTempAccessUser = TempAccessUser.find({
+              $and: [
+                { Gender: SearchValue },
+                { ApproveStatus: "Pending" },
+                { PersonalUniqueueID: { $gt: -1 } }
+              ]
+            }).select("-_id -__v -updatedAt");
+          }
+          queryTempAccessUser.exec(function(err, res) {
+            if (!err) {
+              if (res != null) {
+                res.forEach(element => {
+                  var Obj = new Object();
+                  Obj.PersonalUniqueueID = element.PersonalUniqueueID;
+                  Obj.FullName = element.FullName;
+                  Obj.FirstName = element.FullName.split("~")[0];
+                  Obj.MiddleName = element.FullName.split("~")[1];
+                  Obj.LastName = element.FullName.split("~")[2];
+                  Obj.GenderIs = element.Gender;
+                  Obj.DateOfBirth = element.DateOfBirth;
+                  Obj.Age = element.Age;
+                  Obj.Address = element.Address;
+                  Obj.FlatOrBungalowNumber = element.Address.split("~")[0];
+                  Obj.SocietyName = element.Address.split("~")[1];
+                  Obj.StreetName = element.Address.split("~")[2];
+                  Obj.City = element.City;
+                  Obj.State = element.State;
+                  Obj.PinCode = element.PinCode;
+                  Obj.PhoneNo = element.PhoneNo;
+                  Obj.MobileNo = element.MobileNo;
+                  Obj.IsPhysicalDisability = element.PhysicalDisability;
+                  Obj.Married = element.MaritalStatus;
+                  Obj.Education = element.EducationStatus;
+                  Obj.BirthSign = element.BirthSign;
+                  Obj.ApproveStatus = element.ApproveStatus;
+                  var date = new Date(element.createdAt);
+                  date = date.toUTCString();
+                  Obj.createdAt = date;
+                  returnedAccessUserObjects.push(Obj);
+                });
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              } else {
+                response.send({
+                  data: returnedAccessUserObjects
+                });
+              }
+            }
+          });
+        }
+      }
     }
   });
 };
