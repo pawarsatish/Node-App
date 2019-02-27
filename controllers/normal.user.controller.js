@@ -71,7 +71,6 @@ AccessUserController.SearchAccessUser = function(request, response) {
     } else {
       request.decoded = decoded;
       var returnedAccessUserObjects = [];
-
       if (Criteria == "InActive") {
         var queryTempAccessUser = null;
         if (SearchKey === "UserName") {
